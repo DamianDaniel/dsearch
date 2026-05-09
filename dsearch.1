@@ -1,0 +1,48 @@
+.Dd May 9, 2026
+.Dt DSEARCH 1
+.Os
+.Sh NAME
+.Nm dsearch
+.Nd recursively search a directory for files by name
+.Sh SYNOPSIS
+.Nm dsearch
+.Ar folder
+.Ar name
+.Sh DESCRIPTION
+.Nm
+walks
+.Ar folder
+and all of its subdirectories, printing the full path of every file
+or directory whose name contains
+.Ar name
+as a substring.
+The search is case-sensitive.
+.Pp
+Symbolic links are not followed.
+Permission errors on individual directories are reported to standard
+error but do not stop the search.
+.Sh EXIT STATUS
+.Ex -std
+.Bl -tag -width indent
+.It 0
+At least one match was found.
+.It 1
+No matches were found, or an error occurred (wrong usage, starting
+path does not exist, etc.).
+.El
+.Sh EXAMPLES
+Search
+.Pa /home/user/documents
+for any file or directory whose name contains
+.Dq report :
+.Bd -literal -offset indent
+$ dsearch /home/user/documents report
+.Ed
+.Sh DIAGNOSTICS
+Warnings about unreadable directories are printed to standard error
+and the exit status reflects whether any match was found.
+.Sh SEE ALSO
+.Xr find 1 ,
+.Xr ls 1
+.Sh AUTHORS
+Written as a minimal, portable POSIX tool.
