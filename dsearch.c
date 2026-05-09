@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Damian Daiel <damian@danielovci.net>
+ * Copyright (c) 2026 Damian Daniel <damian@danielovci.net>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,6 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+/*
+ * dsearch - recursive file name search
+ * Usage: dsearch FOLDER NAME
+ *
+ * Searches FOLDER and all subdirectories for files whose names
+ * contain NAME (case-sensitive substring match).
+ *
+ * Compiles cleanly on OpenBSD, macOS, and Linux:
+ *   cc -std=c99 -Wall -Wextra -o dsearch dsearch.c
+ */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -24,10 +35,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ANSI_YELLOW "\033[1;33m"
+#define ANSI_RESET  "\033[0m"
+
 static const char *needle = NULL;
 static int        found   = 0;
 
+/* Forward declaration */
 static void search(const char *dirpath);
+
+/*
+ * Print the path with the matching substring highlighted in yellow.
+ */
+static void
+print_match(const char *path)
+{
+	size_t      needlelen = strlen(needle);
+	const char *p         = path;
+	const char *m;
+
+	while ((m = strstr(p, needle)) != NULL) {
+		fwrite(p, 1, (size_t)(m - p), stdout);
+		fputs(ANSI_YELLOW, stdout);
+		fwrite(m, 1, needlelen, stdout);
+		fputs(ANSI_RESET, stdout);
+		p = m + needlelen;
+	}
+	fputs(p, stdout);
+	fputc('\n', stdout);
+}
 
 static void
 search(const char *dirpath)
@@ -40,7 +76,11 @@ search(const char *dirpath)
 
 	dp = opendir(dirpath);
 	if (dp == NULL) {
-		warn("opendir: %s", dirpath);
+		if (errno == EACCES)
+			fprintf(stderr, "dsearch: permission denied: %s\n",
+			        dirpath);
+		else
+			warn("opendir: %s", dirpath);
 		return;
 	}
 
@@ -59,7 +99,7 @@ search(const char *dirpath)
 		snprintf(path, sizeof(path), "%s/%s", dirpath, de->d_name);
 
 		if (strstr(de->d_name, needle) != NULL) {
-			puts(path);
+			print_match(path);
 			found++;
 		}
 
@@ -99,5 +139,7 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
+	fprintf(stderr, "\ndsearch: %d match%s found\n",
+	        found, found == 1 ? "" : "es");
 	return 0;
 }
